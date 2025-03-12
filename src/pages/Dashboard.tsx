@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { TabNavigation } from "@/components/dashboard/TabNavigation";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -113,12 +112,7 @@ const Dashboard = () => {
             icon={<TrendingUpIcon className="h-5 w-5" />}
             value={`${formatNumber(summary.averageApr, 2)}%`}
             valueType="percentage"
-            subtitle={
-              <div className="flex items-center text-xs text-muted-foreground">
-                <span>APR</span>
-                <ChevronDownIcon className="h-3 w-3 ml-0.5" />
-              </div>
-            }
+            subtitle="APR"
             trend="up"
             trendValue="Highest in market"
           />

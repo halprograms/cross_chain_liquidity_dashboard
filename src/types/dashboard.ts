@@ -15,7 +15,7 @@ export interface StatCardProps {
   title: string;
   value: string;
   valueType?: "currency" | "percentage" | "text";
-  subtitle?: string;
+  subtitle?: string | React.ReactNode;
   icon?: React.ReactNode;
   trend?: "up" | "down" | "neutral";
   trendValue?: string;
