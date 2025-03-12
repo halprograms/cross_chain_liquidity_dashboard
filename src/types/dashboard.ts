@@ -8,7 +8,13 @@ export interface AssetData {
   dailyRewards: number;
   earned: number;
   apr: number;
-  status: number;
+  crossChainLiquidity?: {
+    sourceChain: string;
+    sourceChainIcon: string;
+    targetChain: string;
+    amount: number;
+    percentage: number;
+  }[];
 }
 
 export interface StatCardProps {

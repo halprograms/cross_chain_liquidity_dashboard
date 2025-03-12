@@ -1,8 +1,8 @@
 
 import { AssetData } from "@/types/dashboard";
 import { formatCurrency, formatNumber, formatPercentage } from "@/lib/formatters";
-import { cn } from "@/lib/utils";
-import { ChevronUpIcon, Search, ArrowUpRightIcon, ArrowDownRightIcon, BarChart3Icon, ExternalLinkIcon } from "lucide-react";
+import { cn, getCoinLogo, mapTokenNameToCoinGeckoId, getChainLogo } from "@/lib/utils";
+import { ChevronUpIcon, Search, ArrowUpRightIcon, ArrowDownRightIcon, BarChart3Icon, ExternalLinkIcon, ArrowRightIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -14,7 +14,11 @@ interface AssetTableProps {
 export const AssetTable = ({ assets }: AssetTableProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredAssets, setFilteredAssets] = useState(assets);
+  const [assetLogos, setAssetLogos] = useState<Record<string, string>>({});
+  const [chainLogos, setChainLogos] = useState<Record<string, string>>({});
+  const [isLoadingLogos, setIsLoadingLogos] = useState(true);
 
+  // Filter assets based on search query
   useEffect(() => {
     const filtered = assets.filter(asset => 
       asset.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -22,23 +26,72 @@ export const AssetTable = ({ assets }: AssetTableProps) => {
     setFilteredAssets(filtered);
   }, [assets, searchQuery]);
 
-  const renderStatusIndicator = (status: number) => {
-    const width = `${status * 25}%`;
-    let color = "bg-muted";
-    
-    if (status === 1) color = "bg-red-500";
-    if (status === 2) color = "bg-green-500";
-    if (status === 3) color = "bg-blue-500";
-    
-    return (
-      <div className="status-indicator">
-        <div 
-          className={`status-indicator-value ${color}`}
-          style={{ width }}
-        />
-      </div>
-    );
-  };
+  // Fetch asset and chain logos from CoinGecko API
+  useEffect(() => {
+    const fetchLogos = async () => {
+      setIsLoadingLogos(true);
+      
+      // Collect all unique chain names
+      const chainNames = new Set<string>();
+      assets.forEach(asset => {
+        if (asset.crossChainLiquidity && asset.crossChainLiquidity.length > 0) {
+          asset.crossChainLiquidity.forEach(liquidity => {
+            chainNames.add(liquidity.sourceChain);
+            chainNames.add(liquidity.targetChain);
+          });
+        }
+      });
+      
+      // Fetch asset logos
+      const assetLogoPromises = assets.map(async (asset) => {
+        try {
+          const coinGeckoId = mapTokenNameToCoinGeckoId(asset.name);
+          const logoUrl = await getCoinLogo(coinGeckoId);
+          return { assetId: asset.id, logoUrl };
+        } catch (error) {
+          console.error(`Error fetching logo for ${asset.name}:`, error);
+          return { assetId: asset.id, logoUrl: asset.icon }; // Fallback to original icon
+        }
+      });
+      
+      // Fetch chain logos
+      const chainLogoPromises = Array.from(chainNames).map(async (chainName) => {
+        try {
+          const logoUrl = await getChainLogo(chainName);
+          return { chainName, logoUrl };
+        } catch (error) {
+          console.error(`Error fetching logo for chain ${chainName}:`, error);
+          return { chainName, logoUrl: "/placeholder.svg" }; // Fallback to placeholder
+        }
+      });
+      
+      // Wait for all promises to resolve
+      const [assetResults, chainResults] = await Promise.all([
+        Promise.all(assetLogoPromises),
+        Promise.all(chainLogoPromises)
+      ]);
+      
+      // Process asset logos
+      const newAssetLogos: Record<string, string> = {};
+      assetResults.forEach(result => {
+        newAssetLogos[result.assetId] = result.logoUrl;
+      });
+      
+      // Process chain logos
+      const newChainLogos: Record<string, string> = {};
+      chainResults.forEach(result => {
+        newChainLogos[result.chainName] = result.logoUrl;
+      });
+      
+      setAssetLogos(newAssetLogos);
+      setChainLogos(newChainLogos);
+      setIsLoadingLogos(false);
+    };
+
+    if (assets.length > 0) {
+      fetchLogos();
+    }
+  }, [assets]);
 
   return (
     <div className="bg-card rounded-lg border shadow-sm animate-fade-in">
@@ -65,13 +118,13 @@ export const AssetTable = ({ assets }: AssetTableProps) => {
           <thead>
             <tr className="border-b bg-muted/40 font-medium text-muted-foreground">
               <th className="text-left py-3 px-4">Asset</th>
-              <th className="text-left py-3 px-4">Status</th>
               <th className="text-right py-3 px-4">
                 <div className="flex items-center justify-end">
                   <span>Deposit</span>
                   <ChevronUpIcon className="h-4 w-4 ml-1" />
                 </div>
               </th>
+              <th className="text-right py-3 px-4">Cross-Chain Liquidity</th>
               <th className="text-right py-3 px-4">Daily Rewards</th>
               <th className="text-right py-3 px-4">Earned</th>
               <th className="text-right py-3 px-4">APR</th>
@@ -85,42 +138,67 @@ export const AssetTable = ({ assets }: AssetTableProps) => {
                 className="border-b hover:bg-muted/20 transition-colors"
               >
                 <td className="py-3 px-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="relative rounded-full overflow-hidden h-8 w-8 bg-muted flex items-center justify-center">
-                      <img 
-                        src={asset.icon} 
-                        alt={asset.name} 
-                        className="h-7 w-7 object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = "https://placehold.co/100x100?text=Asset";
-                        }}
-                      />
-                      {asset.secondaryIcon && (
-                        <div className="absolute -right-1 -bottom-1 h-5 w-5 rounded-full border-2 border-white bg-muted overflow-hidden flex items-center justify-center">
-                          <img 
-                            src={asset.secondaryIcon} 
-                            alt=""
-                            className="h-4 w-4 object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "https://placehold.co/100x100?text=Sub";
-                            }}
-                          />
+                  <div className="flex flex-col">
+                    {asset.crossChainLiquidity && asset.crossChainLiquidity.length > 0 && (
+                      <div className="flex items-center space-x-1 mb-2">
+                        <div className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full text-xs font-medium flex items-center">
+                          <div className="relative rounded-full overflow-hidden h-4 w-4 bg-muted flex items-center justify-center mr-1">
+                            <img 
+                              src={chainLogos[asset.crossChainLiquidity[0].sourceChain] || asset.crossChainLiquidity[0].sourceChainIcon} 
+                              alt={asset.crossChainLiquidity[0].sourceChain} 
+                              className={`h-3 w-3 object-cover ${isLoadingLogos ? 'opacity-50' : 'opacity-100'}`}
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = "https://placehold.co/100x100?text=Chain";
+                              }}
+                            />
+                          </div>
+                          {asset.crossChainLiquidity[0].sourceChain}
                         </div>
-                      )}
+                        <ArrowRightIcon className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs font-medium">{asset.crossChainLiquidity[0].targetChain}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center space-x-3">
+                      <div className="relative rounded-full overflow-hidden h-8 w-8 bg-muted flex items-center justify-center">
+                        <img 
+                          src={assetLogos[asset.id] || asset.icon} 
+                          alt={asset.name} 
+                          className={`h-7 w-7 object-cover ${isLoadingLogos ? 'opacity-50' : 'opacity-100'}`}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "https://placehold.co/100x100?text=Asset";
+                          }}
+                        />
+                        {asset.secondaryIcon && (
+                          <div className="absolute -right-1 -bottom-1 h-5 w-5 rounded-full border-2 border-white bg-muted overflow-hidden flex items-center justify-center">
+                            <img 
+                              src={asset.secondaryIcon} 
+                              alt=""
+                              className="h-4 w-4 object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = "https://placehold.co/100x100?text=Sub";
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <span className="font-medium">{asset.name}</span>
                     </div>
-                    <span className="font-medium">{asset.name}</span>
                   </div>
-                </td>
-                <td className="py-3 px-4">
-                  {renderStatusIndicator(asset.status)}
                 </td>
                 <td className="py-3 px-4 text-right">
-                  <div className="flex items-center justify-end space-x-2">
-                    <span>{formatCurrency(asset.deposit)}</span>
-                    <div className="flex items-center justify-center rounded-full bg-blue-500 h-6 w-6">
-                      <ArrowDownRightIcon className="h-3.5 w-3.5 text-white" />
+                  <span>{formatCurrency(asset.deposit)}</span>
+                </td>
+                <td className="py-3 px-4 text-right">
+                  {asset.crossChainLiquidity && asset.crossChainLiquidity.length > 0 && (
+                    <div className="flex items-center justify-end space-x-2">
+                      <div className="flex flex-col items-end">
+                        <span>{formatCurrency(asset.crossChainLiquidity[0].amount)}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {formatNumber(asset.crossChainLiquidity[0].percentage, 1)}% of deposit
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </td>
                 <td className="py-3 px-4 text-right">
                   {formatCurrency(asset.dailyRewards)}

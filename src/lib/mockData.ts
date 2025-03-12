@@ -11,7 +11,15 @@ export const mockAssets: AssetData[] = [
     dailyRewards: 77.57,
     earned: 0.35,
     apr: 22330.32,
-    status: 2
+    crossChainLiquidity: [
+      {
+        sourceChain: "Arbitrum",
+        sourceChainIcon: "/placeholder.svg",
+        targetChain: "Ethereum",
+        amount: 75.42,
+        percentage: 59.5
+      }
+    ]
   },
   {
     id: "asset2",
@@ -22,7 +30,15 @@ export const mockAssets: AssetData[] = [
     dailyRewards: 96.22,
     earned: 0.37,
     apr: 30623.18,
-    status: 2
+    crossChainLiquidity: [
+      {
+        sourceChain: "Arbitrum",
+        sourceChainIcon: "/placeholder.svg",
+        targetChain: "Ethereum",
+        amount: 68.81,
+        percentage: 60.0
+      }
+    ]
   },
   {
     id: "asset3",
@@ -33,7 +49,15 @@ export const mockAssets: AssetData[] = [
     dailyRewards: 29.49,
     earned: 0.67,
     apr: 10602.35,
-    status: 1
+    crossChainLiquidity: [
+      {
+        sourceChain: "Arbitrum",
+        sourceChainIcon: "/placeholder.svg",
+        targetChain: "Ethereum",
+        amount: 45.69,
+        percentage: 45.0
+      }
+    ]
   },
   {
     id: "asset4",
@@ -44,7 +68,15 @@ export const mockAssets: AssetData[] = [
     dailyRewards: 14.35,
     earned: 0.12,
     apr: 5362.41,
-    status: 3
+    crossChainLiquidity: [
+      {
+        sourceChain: "Arbitrum",
+        sourceChainIcon: "/placeholder.svg",
+        targetChain: "Ethereum",
+        amount: 39.37,
+        percentage: 40.0
+      }
+    ]
   },
   {
     id: "asset5",
@@ -55,7 +87,15 @@ export const mockAssets: AssetData[] = [
     dailyRewards: 21.86,
     earned: 0.24,
     apr: 9482.76,
-    status: 2
+    crossChainLiquidity: [
+      {
+        sourceChain: "Arbitrum",
+        sourceChainIcon: "/placeholder.svg",
+        targetChain: "Solana",
+        amount: 50.53,
+        percentage: 60.0
+      }
+    ]
   }
 ];
 
